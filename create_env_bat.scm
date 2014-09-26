@@ -45,12 +45,14 @@
 (define (getFlag element)
   (cadr (assq 'clearFlag (cadr element))))
 
+;;element->extralist
 (define (getExtraPath element)
   (let ((extra (assq 'extrapath (cadr element))))
     (if (not extra)
       #f
       (cdr extra))))
 
+;;extralist->string
 (define (makeExtraPath extras)
   (let loop ((extras extras) (ret ""))
     (if (null? extras)
