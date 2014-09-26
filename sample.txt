@@ -16,5 +16,10 @@
    (desc "clean up PATH")
    (clearFlag #t)))
 
-
+(mingw516
+  (
+    (path ("C:\\msys1011\\1.0\\bin" "C:\\MinGW516\\bin"))
+    (extrapath (C_INCLUDE_PATH "C:\\MinGW516\\include") (CPLUS_INCLUDE_PATH "C:\\MinGW516\\include\\c++\\3.4.5;C:\\MinGW516\\include\\c++\\3.4.5\\backward;C:\\MinGW516\\include\\c++\\3.4.5\\mingw32;C:\\MinGW516\\include") (LIBRARY_PATH "C:\\MinGW516\\lib"))
+    (desc "mingw 5.1.6 and msys 1.0.11")
+    (clearFlag #f)))
 

@@ -1,3 +1,4 @@
+#!/usr/local/bin/gosh
 ;;gauche 0.9.4
 ;;gosh create_env_bat.scm
 ;;
@@ -5,8 +6,8 @@
 (define batString "@echo off\n\n%%%IFSECTION%%%\n\n%%%SUBRSECTION%%%\n\n:END\n")  ;;元になる文字列
 ;;reverseしたリストの最初の要素が#<subr read>なのでcdrで弾く
 
-(define (src->sexpList)
-  (with-input-from-file "sexpenv.txt"
+(define (src->sexpList filename)
+  (with-input-from-file filename
     (lambda ()
       (let loop ((sexp read) (ret '()))
         (if (eof-object? sexp)
@@ -44,6 +45,23 @@
 (define (getFlag element)
   (cadr (assq 'clearFlag (cadr element))))
 
+(define (getExtraPath element)
+  (let ((extra (assq 'extrapath (cadr element))))
+    (if (not extra)
+      #f
+      (cdr extra))))
+
+(define (makeExtraPath extras)
+  (let loop ((extras extras) (ret ""))
+    (if (null? extras)
+      ret
+      (if (eq? #f extras)
+        ""
+        (let ((extra (car extras)))
+          (loop (cdr extras) (string-append "set " (symbol->string (car extra)) "=" (cadr extra) "\n" ret)))))))
+;;
+;;(makeExtraPath (getExtraPath (cadr (src->sexpList "sample.txt"))))
+
 ;;[string] -> string
 (define (makeIfSection names)
   (let ((first (car names)))
@@ -61,11 +79,11 @@
       ret
       (loop (cdr names) (cdr descs) (string-append ret "echo \"" (car names) " : " (car descs) "\"\n")))))
 
-(define (makeSubrSection names paths)
-  (let loop((names names) (paths paths) (ret ""))
+(define (makeSubrSection names paths extras)
+  (let loop((names names) (paths paths) (extras extras) (ret ""))
     (if (null? paths)
       ret
-      (loop (cdr names) (cdr paths) (string-append ret ":" (string-upcase (car names)) "\nset PATH=" (car paths) "\ngoto END\n")))))
+      (loop (cdr names) (cdr paths) (cdr extras) (string-append ret ":" (string-upcase (car names)) "\nset PATH=" (car paths) "\n" (makeExtraPath (car extras)) "\ngoto END\n")))))
 
 ;;string->string->string->string->string
 (define (makebatString batString ifSection descSection subrSection)
@@ -73,12 +91,13 @@
 
 ;;(display (makebatString batString (makeIfSection names) (makeDescSection names descs) (makeSubrSection names paths)))
 
+;;引数によるエラー処理などしない
 (define (main args)
-  (let loop ((elements (src->sexpList)) (names '()) (paths '()) (descs '()))
+  (let loop ((elements (src->sexpList (cadr args))) (names '()) (paths '()) (descs '()) (extras '()))
     (if (not(null? elements))
       (let ((element (car elements)))
-        (loop (cdr elements) (cons (getName element) names) (cons (getPath element) paths) (cons (getDesc element) descs)))
-    (let ((ifSection (makeIfSection names)) (descSection (makeDescSection names descs)) (subrSection (makeSubrSection names paths)))
+        (loop (cdr elements) (cons (getName element) names) (cons (getPath element) paths) (cons (getDesc element) descs) (cons (getExtraPath element) extras)))
+    (let ((ifSection (makeIfSection names)) (descSection (makeDescSection names descs)) (subrSection (makeSubrSection names paths extras)))
       (call-with-output-file "setenv.bat"
         (lambda (p)
           (display (regexp-replace* batString #/%%%IFSECTION%%%/ ifSection #/%%%DESCSECTION%%%/ descSection #/%%%SUBRSECTION%%%/ (regexp-quote subrSection)) p))))))
